@@ -1,8 +1,18 @@
+/*
+ * main.c
+ *
+ * Para executar, navegue até o caminho do arquivo e execute 
+ * $ make run
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
 #include <sys/time.h>
 #include "arvore.h"
+#include "barreira.h"
+
+#define NUM_THREAD 1
 
 void TestaI(TipoNo *p, int pai);
 void Testa(TipoNo *p);
@@ -15,6 +25,13 @@ int main(int argc, char *argv[]) {
     TipoRegistro x;
     TipoChave vetor[MAX_NODES];
     int i, j, k, n;
+
+    /* TESTANDO FUNCIONAMENTO DA BARREIRA IMPLEMENTADA */
+    /*  - Numero de threads fixado em 1 */
+    TBarreira bar;
+    initBarreira(&bar, NUM_THREAD);
+    barreira(&bar);
+    destroyBarreira(&bar);
 
     Inicializa(&Dicionario);
     /* Gera uma permutação aleatoria de chaves entre 1 e MAX_NODES */
