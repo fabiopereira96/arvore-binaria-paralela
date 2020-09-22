@@ -19,24 +19,37 @@ void Pesquisa(TipoRegistro *x, TipoApontador *p) {
     }
 }
 
-void Insere(TipoRegistro x, TipoApontador *p) {
+void Insere(void *data) {
+    TArgs *args = data;
+    
+    TipoApontador *p = args->p;
+    TipoRegistro x = args->x;
+    pthread_mutex_init (&(*p)->Mutex, NULL);
+    pthread_mutex_lock (&(*p)->Mutex);
     if (*p == NULL) {
         *p = (TipoApontador)malloc(sizeof(TipoNo));
         (*p)->Reg = x;
         (*p)->Esq = NULL;
         (*p)->Dir = NULL;
+        
+        pthread_mutex_unlock (&(*p)->Mutex);
         return;
     }
 
     if (x.Chave < (*p)->Reg.Chave) {
-        Insere(x, &(*p)->Esq);
+        args->p = (*p)->Esq;
+        Insere(args);
+        pthread_mutex_unlock (&(*p)->Mutex);
         return;
     }
 
     if (x.Chave > (*p)->Reg.Chave) {
-        Insere(x, &(*p)->Dir);
+        args->p = (*p)->Dir;
+        pthread_mutex_unlock (&(*p)->Mutex);
+        Insere(args);
+
     } else {
-        printf("Erro : Registro ja existe na arvore\n");
+        printf("Erro : Regist        ja existe na arvore\n");
     }
 }
 

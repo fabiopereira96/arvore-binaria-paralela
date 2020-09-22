@@ -43,9 +43,20 @@ int main(int argc, char *argv[]) {
     Permut(vetor, MAX_NODES - 1);
 
     /* Insere cada chave na arvore e testa sua integridade apos cada insercao */
+    pthread_t thread_id[MAX_NODES]; 
+        
+    TArgs *args = malloc(sizeof(*args));
+    int rc;
     for (i = 0; i < MAX_NODES; i++) {
         x.Chave = vetor[i];
-        Insere(x, &Dicionario);
+        args->x = x;
+        args->p = &Dicionario;
+
+        rc = pthread_create(&thread_id[i], NULL, Insere, (void *)args); 
+        if (rc){
+         printf("ERROR; return code from pthread_create() is %d\n", rc);
+         exit(-1);
+      }
         printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
@@ -67,9 +78,9 @@ int main(int argc, char *argv[]) {
             }
         }
         x.Chave = n;
-        Insere(x, &Dicionario);
-        printf("Inseriu chave: %ld\n", x.Chave);
-        Testa(Dicionario);
+        // Insere(x, &Dicionario);
+        // printf("Inseriu chave: %ld\n", x.Chave);
+        // Testa(Dicionario);
     }
 
     /* Retira a raiz da arvore ate que ela fique vazia */
