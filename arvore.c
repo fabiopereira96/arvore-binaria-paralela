@@ -4,7 +4,7 @@
 
 void Pesquisa(TipoRegistro *x, TipoApontador *p) {
     if (*p == NULL) {
-        printf("Erro: Registro nao esta presente na arvore\n");
+        printf("Erro: Registro %ld nao esta presente na arvore\n", x->Chave);
         return;
     }
     if (x->Chave < (*p)->Reg.Chave) {
@@ -19,37 +19,39 @@ void Pesquisa(TipoRegistro *x, TipoApontador *p) {
     }
 }
 
-void Insere(void *data) {
-    TArgs *args = data;
-    
-    TipoApontador *p = args->p;
-    TipoRegistro x = args->x;
-    pthread_mutex_init (&(*p)->Mutex, NULL);
-    pthread_mutex_lock (&(*p)->Mutex);
+void* InsereParalelo(void *data){
+    TArgs *args = (TArgs*) data;    
+    Insere(args->x, args->p);
+    return NULL;
+}
+
+void Insere(TipoRegistro x, TipoApontador *p) {
     if (*p == NULL) {
         *p = (TipoApontador)malloc(sizeof(TipoNo));
+
+        /*
+            Nao sei se faria sentido bloquear aqui 
+            ou teriamos uma variavel de condicao pra 
+            ver se o valor ta bloqueado pelo mutex ou nao
+        */
+        //pthread_mutex_lock (&x.Mutex);
         (*p)->Reg = x;
         (*p)->Esq = NULL;
         (*p)->Dir = NULL;
-        
-        pthread_mutex_unlock (&(*p)->Mutex);
+        //pthread_mutex_unlock (&x.Mutex);
+
         return;
     }
 
     if (x.Chave < (*p)->Reg.Chave) {
-        args->p = (*p)->Esq;
-        Insere(args);
-        pthread_mutex_unlock (&(*p)->Mutex);
+        Insere(x, &(*p)->Esq);
         return;
     }
 
     if (x.Chave > (*p)->Reg.Chave) {
-        args->p = (*p)->Dir;
-        pthread_mutex_unlock (&(*p)->Mutex);
-        Insere(args);
-
+        Insere(x, &(*p)->Dir);
     } else {
-        printf("Erro : Regist        ja existe na arvore\n");
+        printf("Erro: Registro ja existe na arvore\n");
     }
 }
 
@@ -70,8 +72,9 @@ void Antecessor(TipoApontador q, TipoApontador *r) {
 
 void Retira(TipoRegistro x, TipoApontador *p) {
     TipoApontador Aux;
+    
     if (*p == NULL) {
-        printf("Erro : Registro nao esta na arvore\n");
+        printf("Erro : Registro %ld nao esta na arvore\n", x.Chave);
         return;
     }
 
@@ -86,9 +89,11 @@ void Retira(TipoRegistro x, TipoApontador *p) {
     }
     
     if ((*p)->Dir == NULL) {
+        pthread_mutex_lock (&x.Mutex);
         Aux = *p;
         *p = (*p)->Esq;
         free(Aux);
+        pthread_mutex_unlock (&x.Mutex);
         return;
     }
 
@@ -96,10 +101,12 @@ void Retira(TipoRegistro x, TipoApontador *p) {
         Antecessor(*p, &(*p)->Esq);
         return;
     }
-
+    
+    pthread_mutex_lock (&x.Mutex);
     Aux = *p;
     *p = (*p)->Dir;
     free(Aux);
+    pthread_mutex_unlock (&x.Mutex);
 }
 
 void Central(TipoApontador p) {

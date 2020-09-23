@@ -12,7 +12,7 @@
 #include "arvore.h"
 #include "barreira.h"
 
-#define NUM_THREAD 1
+#define NUM_THREAD 4
 
 void TestaI(TipoNo *p, int pai);
 void Testa(TipoNo *p);
@@ -29,9 +29,9 @@ int main(int argc, char *argv[]) {
     /* TESTANDO FUNCIONAMENTO DA BARREIRA IMPLEMENTADA */
     /*  - Numero de threads fixado em 1 */
     TBarreira bar;
-    initBarreira(&bar, NUM_THREAD);
-    barreira(&bar);
-    destroyBarreira(&bar);
+    initBarreira(&bar, 1);
+    //Testa barreira
+    //barreira(&bar);
 
     Inicializa(&Dicionario);
     /* Gera uma permutação aleatoria de chaves entre 1 e MAX_NODES */
@@ -44,15 +44,20 @@ int main(int argc, char *argv[]) {
 
     /* Insere cada chave na arvore e testa sua integridade apos cada insercao */
     pthread_t thread_id[MAX_NODES]; 
+    TArgs args[MAX_NODES];
         
-    TArgs *args = malloc(sizeof(*args));
     int rc;
     for (i = 0; i < MAX_NODES; i++) {
+        //Inicia conteudo do No da arvore que sera inserido
         x.Chave = vetor[i];
-        args->x = x;
-        args->p = &Dicionario;
+        pthread_mutex_init (&x.Mutex, NULL);
+        
+        //Adiciona lista de parametros para execucao da insercao em paralelo
+        args[i].x = x;
+        args[i].p = (TipoApontador*) malloc(sizeof(TipoApontador));
+        args[i].p = &Dicionario;
 
-        rc = pthread_create(&thread_id[i], NULL, Insere, (void *)args); 
+        rc = pthread_create(&(thread_id[i]), NULL, InsereParalelo, &args[i]); 
         if (rc){
          printf("ERROR; return code from pthread_create() is %d\n", rc);
          exit(-1);
@@ -60,6 +65,8 @@ int main(int argc, char *argv[]) {
         printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
+
+    barreira(&bar);
 
     /* Retira uma chave aleatoriamente e realiza varias pesquisas */
     for (i = 0; i <= MAX_NODES; i++) {
@@ -78,9 +85,9 @@ int main(int argc, char *argv[]) {
             }
         }
         x.Chave = n;
-        // Insere(x, &Dicionario);
-        // printf("Inseriu chave: %ld\n", x.Chave);
-        // Testa(Dicionario);
+        Insere(x, &Dicionario);
+        printf("Inseriu chave: %ld\n", x.Chave);
+        Testa(Dicionario);
     }
 
     /* Retira a raiz da arvore ate que ela fique vazia */
