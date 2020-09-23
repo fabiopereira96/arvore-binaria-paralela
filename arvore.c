@@ -21,11 +21,11 @@ void Pesquisa(TipoRegistro *x, TipoApontador *p) {
 
 void* InsereParalelo(void *data){
     TArgs *args = (TArgs*) data;    
-    Insere(args->x, args->p);
+    Insere(args->x, args->p, args->barreira);
     return NULL;
 }
 
-void Insere(TipoRegistro x, TipoApontador *p) {
+void Insere(TipoRegistro x, TipoApontador *p, TBarreira *bar) {
     if (*p == NULL) {
         *p = (TipoApontador)malloc(sizeof(TipoNo));
 
@@ -39,17 +39,18 @@ void Insere(TipoRegistro x, TipoApontador *p) {
         (*p)->Esq = NULL;
         (*p)->Dir = NULL;
         //pthread_mutex_unlock (&x.Mutex);
+        barreira(bar);
 
         return;
     }
 
     if (x.Chave < (*p)->Reg.Chave) {
-        Insere(x, &(*p)->Esq);
+        Insere(x, &(*p)->Esq, bar);
         return;
     }
 
     if (x.Chave > (*p)->Reg.Chave) {
-        Insere(x, &(*p)->Dir);
+        Insere(x, &(*p)->Dir, bar);
     } else {
         printf("Erro: Registro ja existe na arvore\n");
     }
@@ -88,6 +89,12 @@ void Retira(TipoRegistro x, TipoApontador *p) {
         return;
     }
     
+    /*
+        Exclusao bloqueia o registro 
+        que será removido.
+        A ideia é que, quando ele for bloqueado aqui
+        a consulta fique em wait ate ser liberado pelo unlock.
+    */
     if ((*p)->Dir == NULL) {
         pthread_mutex_lock (&x.Mutex);
         Aux = *p;
@@ -102,6 +109,12 @@ void Retira(TipoRegistro x, TipoApontador *p) {
         return;
     }
     
+    /*
+        Exclusao bloqueia o registro 
+        que será removido.
+        A ideia é que, quando ele for bloqueado aqui
+        a consulta fique em wait ate ser liberado pelo unlock.
+    */
     pthread_mutex_lock (&x.Mutex);
     Aux = *p;
     *p = (*p)->Dir;

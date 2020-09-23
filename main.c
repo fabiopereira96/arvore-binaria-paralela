@@ -10,7 +10,6 @@
 #include <limits.h>
 #include <sys/time.h>
 #include "arvore.h"
-#include "barreira.h"
 
 #define NUM_THREAD 4
 
@@ -28,8 +27,9 @@ int main(int argc, char *argv[]) {
 
     /* TESTANDO FUNCIONAMENTO DA BARREIRA IMPLEMENTADA */
     /*  - Numero de threads fixado em 1 */
-    TBarreira bar;
-    initBarreira(&bar, 1);
+    TBarreira bar, barExclusao;
+    initBarreira(&bar, MAX_NODES);
+    initBarreira(&barExclusao, 1);
     //Testa barreira
     //barreira(&bar);
 
@@ -55,7 +55,9 @@ int main(int argc, char *argv[]) {
         //Adiciona lista de parametros para execucao da insercao em paralelo
         args[i].x = x;
         args[i].p = (TipoApontador*) malloc(sizeof(TipoApontador));
+        args[i].barreira = (TBarreira*) malloc(sizeof(TBarreira));
         args[i].p = &Dicionario;
+        args[i].barreira = &bar;
 
         rc = pthread_create(&(thread_id[i]), NULL, InsereParalelo, &args[i]); 
         if (rc){
@@ -65,8 +67,6 @@ int main(int argc, char *argv[]) {
         printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
-
-    barreira(&bar);
 
     /* Retira uma chave aleatoriamente e realiza varias pesquisas */
     for (i = 0; i <= MAX_NODES; i++) {
@@ -85,7 +85,14 @@ int main(int argc, char *argv[]) {
             }
         }
         x.Chave = n;
-        Insere(x, &Dicionario);
+        /*
+            Criei uma barreira só para esse ponto enquanto 
+            essa inserção não está em paralelo.
+            Nesse caso ela so tem 1 thread
+            ai ficaria em loop infinito esperando
+            as outras threads
+        */
+        Insere(x, &Dicionario, &barExclusao);
         printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
@@ -98,6 +105,12 @@ int main(int argc, char *argv[]) {
         printf("Retirou chave: %ld\n", x.Chave);
     }
 
+    /*
+        Esse destroy ta causando 
+        Segmentation fault: 11
+    */
+    //destroyBarreira(&bar);
+    //destroyBarreira(&barExclusao);
     return 0;
 }
 
