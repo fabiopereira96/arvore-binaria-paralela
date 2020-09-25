@@ -10,9 +10,8 @@
 #include <limits.h>
 #include <sys/time.h>
 #include "arvore.h"
-#include "barreira.h"
 
-#define NUM_THREAD 1
+#define NUM_THREAD 4
 
 void TestaI(TipoNo *p, int pai);
 void Testa(TipoNo *p);
@@ -28,10 +27,11 @@ int main(int argc, char *argv[]) {
 
     /* TESTANDO FUNCIONAMENTO DA BARREIRA IMPLEMENTADA */
     /*  - Numero de threads fixado em 1 */
-    TBarreira bar;
-    initBarreira(&bar, NUM_THREAD);
-    barreira(&bar);
-    destroyBarreira(&bar);
+    TBarreira bar, barExclusao;
+    initBarreira(&bar, MAX_NODES + 1);
+    initBarreira(&barExclusao, 1);
+    //Testa barreira
+    //barreira(&bar);
 
     Inicializa(&Dicionario);
     /* Gera uma permutação aleatoria de chaves entre 1 e MAX_NODES */
@@ -44,22 +44,31 @@ int main(int argc, char *argv[]) {
 
     /* Insere cada chave na arvore e testa sua integridade apos cada insercao */
     pthread_t thread_id[MAX_NODES]; 
+    TArgs args[MAX_NODES];
         
-    TArgs *args = malloc(sizeof(*args));
     int rc;
     for (i = 0; i < MAX_NODES; i++) {
+        //Inicia conteudo do No da arvore que sera inserido
         x.Chave = vetor[i];
-        args->x = x;
-        args->p = &Dicionario;
+        pthread_mutex_init (&x.Mutex, NULL);
+        
+        //Adiciona lista de parametros para execucao da insercao em paralelo
+        args[i].x = x;
+        args[i].p = (TipoApontador*) malloc(sizeof(TipoApontador));
+        args[i].barreira = (TBarreira*) malloc(sizeof(TBarreira));
+        args[i].p = &Dicionario;
+        args[i].barreira = &bar;
 
-        rc = pthread_create(&thread_id[i], NULL, Insere, (void *)args); 
+        rc = pthread_create(&(thread_id[i]), NULL, InsereParalelo, &args[i]); 
         if (rc){
-         printf("ERROR; return code from pthread_create() is %d\n", rc);
-         exit(-1);
-      }
+            printf("ERROR; return code from pthread_create() is %d\n", rc);
+            exit(-1);
+        }
         printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
+
+    barreira(&bar);
 
     /* Retira uma chave aleatoriamente e realiza varias pesquisas */
     for (i = 0; i <= MAX_NODES; i++) {
@@ -78,9 +87,16 @@ int main(int argc, char *argv[]) {
             }
         }
         x.Chave = n;
-        // Insere(x, &Dicionario);
-        // printf("Inseriu chave: %ld\n", x.Chave);
-        // Testa(Dicionario);
+        /*
+            Criei uma barreira só para esse ponto enquanto 
+            essa inserção não está em paralelo.
+            Nesse caso ela so tem 1 thread
+            ai ficaria em loop infinito esperando
+            as outras threads
+        */
+        Insere(x, &Dicionario, &barExclusao);
+        printf("Inseriu chave: %ld\n", x.Chave);
+        Testa(Dicionario);
     }
 
     /* Retira a raiz da arvore ate que ela fique vazia */
@@ -91,6 +107,12 @@ int main(int argc, char *argv[]) {
         printf("Retirou chave: %ld\n", x.Chave);
     }
 
+    /*
+        Esse destroy ta causando 
+        Segmentation fault: 11
+    */
+    //destroyBarreira(&bar);
+    //destroyBarreira(&barExclusao);
     return 0;
 }
 
