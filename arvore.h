@@ -41,6 +41,6 @@ void Antecessor(TipoApontador q, TipoApontador *r);
 
 void PesquisaParalelo(void *data);  //TODO Implementar pesquisa em paralelo
 void* InsereParalelo(void *data);
-void RetiraParalelo(void *data);    //TODO Implementar pesquisa em paralelo
+void* RetiraParalelo(void *data);    //TODO Implementar pesquisa em paralelo
 
 #endif

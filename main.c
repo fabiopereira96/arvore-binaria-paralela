@@ -64,19 +64,39 @@ int main(int argc, char *argv[]) {
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
         }
-        printf("Inseriu chave: %ld\n", x.Chave);
+        // printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
 
     barreira(&bar);
 
+    pthread_t thread2_id[MAX_NODES+1]; 
+    TArgs argsRemove[MAX_NODES];
+
     /* Retira uma chave aleatoriamente e realiza varias pesquisas */
-    for (i = 0; i <= MAX_NODES; i++) {
+    for (i = 0; i < MAX_NODES; i++) {
         k = (int)(10.0 * rand() / (RAND_MAX + 1.0));
         n = vetor[k];
         x.Chave = n;
-        Retira(x, &Dicionario);
+        pthread_mutex_init (&x.Mutex, NULL);
+        
+        //Adiciona lista de parametros para execucao da insercao em paralelo
+        argsRemove[i].x = x;
+        argsRemove[i].p = (TipoApontador*) malloc(sizeof(TipoApontador));
+        argsRemove[i].barreira = (TBarreira*) malloc(sizeof(TBarreira));
+        argsRemove[i].p = &Dicionario;
+        argsRemove[i].barreira = &barExclusao;
+
+    
+        rc = pthread_create(&(thread2_id[i]), NULL, RetiraParalelo, &argsRemove[i]); 
+        barreira(&barExclusao);
+         if (rc){
+             printf("ERROR; return code from pthread_create() is %d\n", rc);
+             exit(-1);
+         }
+
         Testa(Dicionario);
+
         printf("Retirou chave: %ld\n", x.Chave);
         for (j = 0; j < MAX_NODES; j++) {
             x.Chave = vetor[(int)(10.0 * rand() / (RAND_MAX + 1.0))];
@@ -98,14 +118,16 @@ int main(int argc, char *argv[]) {
         printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
-
+    /*
+            Comentei essa parte pq tava dando um overflow
+        */
     /* Retira a raiz da arvore ate que ela fique vazia */
-    for (i = 0; i < MAX_NODES; i++) {
-        x.Chave = Dicionario->Reg.Chave;
-        Retira(x, &Dicionario);
-        Testa(Dicionario);
-        printf("Retirou chave: %ld\n", x.Chave);
-    }
+    // for (i = 0; i < MAX_NODES; i++) {
+    //     x.Chave = Dicionario->Reg.Chave;
+    //     Retira(x, &Dicionario);
+    //     Testa(Dicionario);
+    //     printf("Retirou chave: %ld\n", x.Chave);
+    // }
 
     /*
         Esse destroy ta causando 

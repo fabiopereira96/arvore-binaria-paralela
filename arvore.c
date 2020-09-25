@@ -74,6 +74,12 @@ void Antecessor(TipoApontador q, TipoApontador *r) {
     free(q);
 }
 
+void* RetiraParalelo(void *data){
+    TArgs *args = (TArgs*) data;    
+    Retira(args->x, args->p);
+    return NULL;
+}
+
 void Retira(TipoRegistro x, TipoApontador *p) {
     TipoApontador Aux;
     
@@ -91,13 +97,12 @@ void Retira(TipoRegistro x, TipoApontador *p) {
         Retira(x, &(*p)->Dir);
         return;
     }
-    
-    /*
+     /*
         Exclusao bloqueia o registro 
         que será removido.
         A ideia é que, quando ele for bloqueado aqui
         a consulta fique em wait ate ser liberado pelo unlock.
-    */
+    */   
     if ((*p)->Dir == NULL) {
         pthread_mutex_lock (&x.Mutex);
         Aux = *p;
@@ -111,7 +116,6 @@ void Retira(TipoRegistro x, TipoApontador *p) {
         Antecessor(*p, &(*p)->Esq);
         return;
     }
-    
     /*
         Exclusao bloqueia o registro 
         que será removido.
