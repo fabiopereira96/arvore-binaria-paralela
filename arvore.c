@@ -27,17 +27,20 @@ void* InsereParalelo(void *data){
 
 void Insere(TipoRegistro x, TipoApontador *p, TBarreira *bar) {
     if (*p == NULL) {
-        *p = (TipoApontador)malloc(sizeof(TipoNo));
-
         /*
             Nao sei se faria sentido bloquear aqui 
             ou teriamos uma variavel de condicao pra 
             ver se o valor ta bloqueado pelo mutex ou nao
         */
         //pthread_mutex_lock (&x.Mutex);
+
+        *p = (TipoApontador)malloc(sizeof(TipoNo));
         (*p)->Reg = x;
         (*p)->Esq = NULL;
         (*p)->Dir = NULL;
+        
+        printf("InseriuParalelo chave: %ld\n", x.Chave);
+
         //pthread_mutex_unlock (&x.Mutex);
         barreira(bar);
 

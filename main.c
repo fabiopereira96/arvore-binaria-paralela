@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     /* TESTANDO FUNCIONAMENTO DA BARREIRA IMPLEMENTADA */
     /*  - Numero de threads fixado em 1 */
     TBarreira bar, barExclusao;
-    initBarreira(&bar, MAX_NODES);
+    initBarreira(&bar, MAX_NODES + 1);
     initBarreira(&barExclusao, 1);
     //Testa barreira
     //barreira(&bar);
@@ -61,12 +61,14 @@ int main(int argc, char *argv[]) {
 
         rc = pthread_create(&(thread_id[i]), NULL, InsereParalelo, &args[i]); 
         if (rc){
-         printf("ERROR; return code from pthread_create() is %d\n", rc);
-         exit(-1);
-      }
+            printf("ERROR; return code from pthread_create() is %d\n", rc);
+            exit(-1);
+        }
         printf("Inseriu chave: %ld\n", x.Chave);
         Testa(Dicionario);
     }
+
+    barreira(&bar);
 
     /* Retira uma chave aleatoriamente e realiza varias pesquisas */
     for (i = 0; i <= MAX_NODES; i++) {
