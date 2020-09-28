@@ -20,7 +20,7 @@
  * to do something in a serial region before entering another
  * parallel section of code.
  * AUTHOR: http://ptgmedia.pearsoncmg.com/images/0201633922/sourcecode/barrier.c
- * LAST REVISED: 20/09/2020 by Fábio Pereira
+ * LAST REVISED: 27/09/2020 by Fábio Pereira
  */
 #include <pthread.h>
 #include <errno.h>

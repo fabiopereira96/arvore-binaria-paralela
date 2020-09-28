@@ -2,19 +2,31 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void Pesquisa(TipoRegistro *x, TipoApontador *p) {
+void* PesquisaParalelo(void *data){
+    TArgs *args = (TArgs*) data;    
+    Pesquisa(&args->x, args->p, args->barreira);
+    return NULL;
+}
+
+void Pesquisa(TipoRegistro *x, TipoApontador *p, TBarreira *bar) {
     if (*p == NULL) {
         printf("Erro: Registro %ld nao esta presente na arvore\n", x->Chave);
         return;
     }
     if (x->Chave < (*p)->Reg.Chave) {
-        Pesquisa(x, &(*p)->Esq);
+        Pesquisa(x, &(*p)->Esq, bar);
         return;
     }
 
     if (x->Chave > (*p)->Reg.Chave) {
-        Pesquisa(x, &(*p)->Dir);
+        Pesquisa(x, &(*p)->Dir, bar);
     } else {
+        /*
+           Aguarda até que o registro esteja desbloqueado para consulta
+           Assim que chegamos ao No que contem o registro, aguardamos 
+           ate que ele esteja disponivel apos um sinal via broadcast.
+        */
+        pthread_cond_wait(&(*p)->Reg.Condicao, &(*p)->Reg.Mutex);
         *x = (*p)->Reg;
     }
 }
@@ -27,22 +39,22 @@ void* InsereParalelo(void *data){
 
 void Insere(TipoRegistro x, TipoApontador *p, TBarreira *bar) {
     if (*p == NULL) {
-        /*
-            Nao sei se faria sentido bloquear aqui 
-            ou teriamos uma variavel de condicao pra 
-            ver se o valor ta bloqueado pelo mutex ou nao
-        */
-        //pthread_mutex_lock (&x.Mutex);
 
         *p = (TipoApontador)malloc(sizeof(TipoNo));
         (*p)->Reg = x;
         (*p)->Esq = NULL;
         (*p)->Dir = NULL;
         
+        /*
+            Altera valor da barreira para sincronizar as threads no teste
+            Notifica via broadcast todos os possiveis ouvintes
+            para o registro x. 
+            Na consulta temos um wait para essa mesma condicao.
+        */
         printf("InseriuParalelo chave: %ld\n", x.Chave);
-
-        //pthread_mutex_unlock (&x.Mutex);
         barreira(bar);
+        printf("Notifica todos ouvintes que aguardam a chave: %ld\n", x.Chave);
+        pthread_cond_broadcast(&x.Condicao);
 
         return;
     }
@@ -98,17 +110,19 @@ void Retira(TipoRegistro x, TipoApontador *p) {
         return;
     }
      /*
-        Exclusao bloqueia o registro 
-        que será removido.
-        A ideia é que, quando ele for bloqueado aqui
-        a consulta fique em wait ate ser liberado pelo unlock.
-    */   
+        Exclusao bloqueia o registro que será removido.
+        Notifica via broadcast todos os possiveis ouvintes
+        para o registro x apos liberar sua utilizacao. 
+        Na consulta temos um wait para essa mesma condicao.
+    */
     if ((*p)->Dir == NULL) {
         pthread_mutex_lock (&x.Mutex);
         Aux = *p;
         *p = (*p)->Esq;
         free(Aux);
         pthread_mutex_unlock (&x.Mutex);
+        printf("Notifica todos ouvintes que aguardam a chave: %ld\n", x.Chave);
+        pthread_cond_broadcast(&x.Condicao);
         return;
     }
 
@@ -116,17 +130,20 @@ void Retira(TipoRegistro x, TipoApontador *p) {
         Antecessor(*p, &(*p)->Esq);
         return;
     }
+    
     /*
-        Exclusao bloqueia o registro 
-        que será removido.
-        A ideia é que, quando ele for bloqueado aqui
-        a consulta fique em wait ate ser liberado pelo unlock.
+        Exclusao bloqueia o registro que será removido.
+        Notifica via broadcast todos os possiveis ouvintes
+        para o registro x apos liberar sua utilizacao. 
+        Na consulta temos um wait para essa mesma condicao.
     */
     pthread_mutex_lock (&x.Mutex);
     Aux = *p;
     *p = (*p)->Dir;
     free(Aux);
     pthread_mutex_unlock (&x.Mutex);
+    printf("Notifica todos ouvintes que aguardam a chave: %ld\n", x.Chave);
+    pthread_cond_broadcast(&x.Condicao);
 }
 
 void Central(TipoApontador p) {
