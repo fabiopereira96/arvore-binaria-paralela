@@ -122,6 +122,9 @@ int main(int argc, char *argv[]) {
         Testa(Dicionario);
     }
     
+    destroyBarreira(&bar);
+    destroyBarreira(&barExclusao);
+    destroyBarreira(&barPesquisa);
     return 0;
 }
 
